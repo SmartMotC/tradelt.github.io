@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Трейдинг - TradeIt</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">TradeIt</div>
+                <nav>
+                    <ul>
+                        <li><a href="index.html">Главная</a></li>
+                        <li><a href="trading.html" class="nav-active">Трейдинг</a></li>
+                        <li><a href="cases.html">Кейсы</a></li>
+                        <li><a href="support.html">Поддержка</a></li>
+                        <li><a href="news.html">Новости</a></li>
+                    </ul>
+                </nav>
+                <div class="user-actions">
+                    <button onclick="location.href='index.html#steamModal'">Войти через Steam</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <section class="hero">
+        <div class="container">
+            <h1>Трейдинг предметов CS2</h1>
+            <p>Безопасный обмен скинами с лучшими условиями на рынке</p>
+        </div>
+    </section>
+
+    <section class="features">
+        <div class="container">
+            <h2 class="section-title">Доступные предметы</h2>
+            <div class="items-grid">
+                <!-- Items will be loaded here -->
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <!-- Same footer as index.html -->
+    </footer>
+
+    <script>
+        // Trading page specific functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            // Load trading items
+            const itemsGrid = document.querySelector('.items-grid');
+            // Add items dynamically
+        });
+    </script>
+</body>
+</html>

